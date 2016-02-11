@@ -6,7 +6,7 @@ Package `rcon` implements the communication protocol for communicating with RCON
 
 With Google's [Go](http://www.golang.org) installed on your machine:
 
-    $ go get -u github.com/chuckpreslar/rcon
+    $ go get -u github.com/cpf/rcon
 
 ## Usage
 
@@ -16,41 +16,41 @@ A simple example using the library to authorize to the RCON server and issue a c
 package main
 
 import (
-  "github.com/chuckpreslar/rcon"
+  "github.com/cpf/rcon"
 )
 
 func main() {
   client, err := rcon.NewClient("127.0.0.1" /* Your servers IP address */, 27015 /* Its port */)
-  
+
   if nil != err {
     // Failed to open TCP connection to server.
     panic(err)
   }
-  
+
   var packet *rcon.Packet
-  
+
   packet, err = client.Authorize("password" /* The RCON password for your server */)
-  
+
   if nil != err {
     // Failed to authorize your connection with the server.
     panic(err)
   }
-  
+
   packet, err = client.Execute("command" /* The command to run */)
-  
+
   if nil != err {
     // Failed to execute command
     panic(err)
   }
-  
+
   // Result of running command stored in packet.Body
-  
+
 }
 ```
-    
+
 ## Documentation
 
-View godoc or visit [godoc.org](http://godoc.org/github.com/chuckpreslar/rcon).
+View godoc or visit [godoc.org](http://godoc.org/github.com/cpf/rcon).
 
     $ godoc rcon
 

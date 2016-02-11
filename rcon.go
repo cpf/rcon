@@ -61,7 +61,7 @@ type Packet struct {
 // byte array payload, returning an error if the binary packages
 // Write method fails to write the header bytes in their little
 // endian byte order.
-func (p Packet) Compile() (payload []byte, err error) {
+func (p Packet) compile() (payload []byte, err error) {
 	var size int32 = p.Header.Size
 	var buffer bytes.Buffer
 	var padding [PacketPaddingSize]byte
@@ -81,7 +81,7 @@ func (p Packet) Compile() (payload []byte, err error) {
 }
 
 // NewPacket returns a pointer to a new Packet type.
-func NewPacket(challenge, typ int32, body string) (packet *Packet) {
+func newPacket(challenge, typ int32, body string) (packet *Packet) {
 	size := int32(len([]byte(body)) + PacketHeaderSize + PacketPaddingSize)
 	return &Packet{Header{size, challenge, typ}, body}
 }
@@ -90,7 +90,7 @@ func NewPacket(challenge, typ int32, body string) (packet *Packet) {
 // password.  The response packet is returned if authorization is successful
 // or a potential error.
 func (c *Client) Authorize(password string) (response *Packet, err error) {
-	if response, err = c.Send(Auth, password); nil == err {
+	if response, err = c.send(Auth, password); nil == err {
 		if response.Header.Type == AuthResponse {
 			c.Authorized = true
 		} else {
@@ -107,7 +107,7 @@ func (c *Client) Authorize(password string) (response *Packet, err error) {
 // command.  The response packet is returned if the command executed successfully
 // or a potential error.
 func (c *Client) Execute(command string) (response *Packet, err error) {
-	return c.Send(Exec, command)
+	return c.send(Exec, command)
 }
 
 // Sends accepts the commands type and its string to execute to the clients server,
@@ -115,7 +115,7 @@ func (c *Client) Execute(command string) (response *Packet, err error) {
 // and compiling its payload bytes in the appropriate order. The resonse is
 // decompiled from its bytes into a Packet type for return. An error is returned
 // if send fails.
-func (c *Client) Send(typ int32, command string) (response *Packet, err error) {
+func (c *Client) send(typ int32, command string) (response *Packet, err error) {
 	if typ != Auth && !c.Authorized {
 		err = ErrUnauthorizedRequest
 		return
@@ -127,8 +127,8 @@ func (c *Client) Send(typ int32, command string) (response *Packet, err error) {
 
 	// Create the packet from the challenge, typ and command
 	// and compile it to its byte payload
-	packet := NewPacket(challenge, typ, command)
-	payload, err := packet.Compile()
+	packet := newPacket(challenge, typ, command)
+	payload, err := packet.compile()
 
 	var n int
 
