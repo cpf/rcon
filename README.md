@@ -20,7 +20,8 @@ import (
 )
 
 func main() {
-  client, err := rcon.NewClient("127.0.0.1" /* Your servers IP address */, 27015 /* Its port */)
+  client := rcon.NewClient("127.0.0.1" /* Your servers IP address */, 27015 /* Its port */)
+  err := client.Connect()
 
   if nil != err {
     // Failed to open TCP connection to server.
@@ -58,7 +59,7 @@ View godoc or visit [godoc.org](http://godoc.org/github.com/cpf/rcon).
 
 > The MIT License (MIT)
 
-> Copyright (c) 2013 Chuck Preslar
+> Copyright (c) 2013 Chuck Preslar, Copyright (c) 2016 Mathias Teugels
 
 > Permission is hereby granted, free of charge, to any person obtaining a copy
 > of this software and associated documentation files (the "Software"), to deal
