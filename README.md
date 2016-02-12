@@ -20,17 +20,17 @@ import (
 )
 
 func main() {
-  client := rcon.NewClient("127.0.0.1" /* Your servers IP address */, 27015 /* Its port */)
+  client := rcon.NewClient("127.0.0.1" /* Your servers IP address */, 27015 /* Its port */, "password" /* Your rcon password */)
   err := client.Connect()
-
   if nil != err {
     // Failed to open TCP connection to server.
     panic(err)
   }
+  defer client.Disconnect()
 
   var packet *rcon.Packet
 
-  packet, err = client.Authorize("password" /* The RCON password for your server */)
+  packet, err = client.Authorize()
 
   if nil != err {
     // Failed to authorize your connection with the server.
