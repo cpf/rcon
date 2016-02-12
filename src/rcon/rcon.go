@@ -1,5 +1,5 @@
 // Package rcon implements the communication protocol for communicating
-// with RCON servers. Tested and working with Valve game servers.
+// with RCON servers.
 package rcon
 
 import (
@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	packetPaddingSize uint8 = 2 // Size of Packet's padding.
-	packetHeaderSize  uint8 = 8 // Size of Packet's header.
+	packetPaddingSize int32 = 2 // Size of Packet's padding.
+	packetHeaderSize  int32 = 8 // Size of Packet's header.
 )
 
 const (
@@ -52,16 +52,16 @@ type header struct {
 	headerType int32 // The type of request being sent.
 }
 
-type packet struct {
-	header header // Packet header.
-	body   string // Body of packet.
+type Packet struct {
+	Header header // Packet header.
+	Body   string // Body of packet.
 }
 
 // NewClient creates a new Client type, creating the connection
 // to the server specified by the host and port arguements. If
 // the connection fails, an error is returned.
 func NewClient(host string, port int) (client *Client, err error) {
-	client = Client{Host: host, Port: port}
+	client = &Client{Host: host, Port: port}
 	return
 }
 
@@ -73,9 +73,9 @@ func (this *Client) Connect() (err error) {
 // Authorize calls Send with the appropriate command type and the provided
 // password.  The response packet is returned if authorization is successful
 // or a potential error.
-func (this *Client) Authorize(password string) (response *packet, err error) {
+func (this *Client) Authorize(password string) (response *Packet, err error) {
 	if response, err = this.send(auth, password); nil == err {
-		if response.header.headerType == authResponse {
+		if response.Header.headerType == authResponse {
 			this.authorized = true
 		} else {
 			err = ErrFailedAuthorization
@@ -90,14 +90,14 @@ func (this *Client) Authorize(password string) (response *packet, err error) {
 // Execute calls Send with the appropriate command type and the provided
 // command.  The response packet is returned if the command executed successfully
 // or a potential error.
-func (this *Client) Execute(command string) (response *packet, err error) {
+func (this *Client) Execute(command string) (response *Packet, err error) {
 	return this.send(exec, command)
 }
 
 // NewPacket returns a pointer to a new Packet type.
-func newPacket(challenge, typ int32, body string) (packet *packet) {
-	size := int32(len([]byte(body)) + packetHeaderSize + packetPaddingSize)
-	return &packet{header{size, challenge, typ}, body}
+func newPacket(challenge, typ int32, body string) (packet *Packet) {
+	size := int32(len([]byte(body)) + int(packetHeaderSize+packetPaddingSize))
+	return &Packet{header{size, challenge, typ}, body}
 }
 
 // Sends accepts the commands type and its string to execute to the clients server,
@@ -105,7 +105,7 @@ func newPacket(challenge, typ int32, body string) (packet *packet) {
 // and compiling its payload bytes in the appropriate order. The resonse is
 // decompiled from its bytes into a Packet type for return. An error is returned
 // if send fails.
-func (this *Client) send(typ int32, command string) (response *packet, err error) {
+func (this *Client) send(typ int32, command string) (response *Packet, err error) {
 	if typ != auth && !this.authorized {
 		err = ErrUnauthorizedRequest
 		return
@@ -141,7 +141,7 @@ func (this *Client) send(typ int32, command string) (response *packet, err error
 		return
 	}
 
-	if packet.header.headerType == auth && header.headerType == responseValue {
+	if packet.Header.headerType == auth && header.headerType == responseValue {
 		// Discard, empty SERVERDATA_RESPOSE_VALUE from authorization.
 		this.connection.Read(make([]byte, header.size-packetHeaderSize))
 
@@ -155,7 +155,7 @@ func (this *Client) send(typ int32, command string) (response *packet, err error
 		}
 	}
 
-	if header.challenge != packet.header.challenge {
+	if header.challenge != packet.Header.challenge {
 		err = ErrInvalidChallenge
 		return
 	}
@@ -171,9 +171,9 @@ func (this *Client) send(typ int32, command string) (response *packet, err error
 		return
 	}
 
-	response = new(packet)
-	response.header = header
-	response.body = strings.TrimRight(string(body), terminationSequence)
+	response = new(Packet)
+	response.Header = header
+	response.Body = strings.TrimRight(string(body), terminationSequence)
 
 	return
 }
@@ -182,20 +182,20 @@ func (this *Client) send(typ int32, command string) (response *packet, err error
 // byte array payload, returning an error if the binary packages
 // Write method fails to write the header bytes in their little
 // endian byte order.
-func (this packet) compile() (payload []byte, err error) {
-	var size int32 = this.header.size
+func (this Packet) compile() (payload []byte, err error) {
+	var size int32 = this.Header.size
 	var buffer bytes.Buffer
 	var padding [packetPaddingSize]byte
 
 	if err = binary.Write(&buffer, binary.LittleEndian, &size); nil != err {
 		return
-	} else if err = binary.Write(&buffer, binary.LittleEndian, &this.header.challenge); nil != err {
+	} else if err = binary.Write(&buffer, binary.LittleEndian, &this.Header.challenge); nil != err {
 		return
-	} else if err = binary.Write(&buffer, binary.LittleEndian, &this.header.headerType); nil != err {
+	} else if err = binary.Write(&buffer, binary.LittleEndian, &this.Header.headerType); nil != err {
 		return
 	}
 
-	buffer.WriteString(this.body)
+	buffer.WriteString(this.Body)
 	buffer.Write(padding[:])
 
 	return buffer.Bytes(), nil
