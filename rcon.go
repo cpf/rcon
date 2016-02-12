@@ -40,8 +40,9 @@ var (
 )
 
 type Client struct {
-	Host       string   // The IP address of the remote server.
-	Port       int      // The Port the remote server's listening on.
+	Host       string // The IP address of the remote server.
+	Port       int    // The Port the remote server's listening on.
+	password   string
 	authorized bool     // Has the client been authorized by the server?
 	connection net.Conn // The TCP connection to the server.
 }
@@ -60,8 +61,8 @@ type Packet struct {
 // NewClient creates a new Client type, creating the connection
 // to the server specified by the host and port arguements. If
 // the connection fails, an error is returned.
-func NewClient(host string, port int) (client *Client, err error) {
-	client = &Client{Host: host, Port: port}
+func NewClient(host string, port int, password string) (client *Client) {
+	client = &Client{Host: host, Port: port, password: password}
 	return
 }
 
@@ -70,11 +71,19 @@ func (this *Client) Connect() (err error) {
 	return
 }
 
+func (this *Client) Disconnect() (err error) {
+	if nil == this.connection {
+		return nil
+	}
+
+	return this.connection.Close()
+}
+
 // Authorize calls Send with the appropriate command type and the provided
 // password.  The response packet is returned if authorization is successful
 // or a potential error.
-func (this *Client) Authorize(password string) (response *Packet, err error) {
-	if response, err = this.send(auth, password); nil == err {
+func (this *Client) Authorize() (response *Packet, err error) {
+	if response, err = this.send(auth, this.password); nil == err {
 		if response.Header.headerType == authResponse {
 			this.authorized = true
 		} else {
